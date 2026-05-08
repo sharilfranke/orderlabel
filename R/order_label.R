@@ -6,6 +6,7 @@
 #' @param label_var DEFAULT = label; name of variable to be ordered
 #' @param group_var DEFAULT = 'NULL'; Add the unquoted name of the grouping variable if your data is grouped
 #' @param percent_var DEFAULT = NULL; Unquoted name of a variable in the dataset (e.g., `group_var` or `country`) that controls where the \% symbol appears. When set, the \% is placed on the first row within each level of `percent_var` in the function's final factor ordering (i.e., it honors `inherent_order_label`, `topbox`, etc.). Useful for grouped charts where you want one \% per group rather than just one \% overall. Ignored when `percent_all = TRUE` or when `num_fmt = "general"`.
+#' @param percent_filter DEFAULT = NULL; Optional unquoted dplyr-style expression (e.g., `group_var == 1`) restricting which rows are eligible to receive the \%. The "top" row within each `percent_var` level is selected only from rows where this evaluates to TRUE. Levels with no eligible rows get no \%. Has no effect unless `percent_var` is also set.
 #' @param inherent_order_label DEFAULT = FALSE; If FALSE, puts labels in descending order. If TRUE, puts labels in the inherent order from survey (e.g., Strongly agree to strongly disagree). Specifying stacked = 'gg' or 'ms' automatically makes inherent_order_label = TRUE
 #' @param inherent_order_group DEFAULT = FALSE; If FALSE, puts groups in descending order. If TRUE, puts groups in the order they are factored (e.g., District 1, District 2...)
 #' @param label_first DEFAULT = NA; If specified, puts the specified label first. ex: 'brand1' would put label called brand1 before all other labels
@@ -59,6 +60,7 @@ order_label <- function(
   label_var = label,
   group_var = 'NULL',
   percent_var = NULL,
+  percent_filter = NULL,
   inherent_order_label = FALSE,
   inherent_order_group = FALSE,
   label_first = NA,
@@ -105,6 +107,7 @@ order_label <- function(
   group_var_flag <- dplyr::enquo(group_var)
   group_var_char <- rlang::as_name(group_var_flag)
   percent_var_flag <- dplyr::enquo(percent_var)
+  percent_filter_flag <- dplyr::enquo(percent_filter)
   # Stacked flags: bars always inherently ordered
   inherent_order_label <- ifelse(
     stacked != 'NULL',
@@ -258,6 +261,7 @@ order_label <- function(
   dataset <- percent_var_fun(
     dataset,
     percent_var_flag,
+    percent_filter_flag,
     percent_all,
     num_fmt,
     inherent_order_label
@@ -349,10 +353,15 @@ factors <- function(
       length(unique(dataset$value)) == 1 |
       dataset$value[1] != '1'
   ) {
-    max_lab <- length(unique(dataset$label))
+    # Assign each label a consistent integer based on factor order of appearance.
+    # Done ungrouped so groups with different row counts (e.g., multi-select
+    # freqs across countries with different option presence) don't fail.
     dataset <- dataset |>
+      dplyr::ungroup() |>
       dplyr::mutate(
-        value = 1:max_lab
+        value = as.integer(
+          forcats::fct_inorder(as.character(.data$label))
+        )
       )
   } else {
     dataset <- dataset
@@ -2059,6 +2068,7 @@ num_fmt_orderlabel <- function(
 percent_var_fun <- function(
   dataset,
   percent_var_flag,
+  percent_filter_flag,
   percent_all,
   num_fmt,
   inherent_order_label
@@ -2072,32 +2082,76 @@ percent_var_fun <- function(
   }
 
   existing_groups <- dplyr::groups(dataset)
+  has_filter <- !rlang::quo_is_null(percent_filter_flag)
 
   dataset <- dataset |>
     dplyr::ungroup() |>
     dplyr::group_by(!!percent_var_flag)
 
-  if (isTRUE(inherent_order_label)) {
+  # Eligibility mask: TRUE for rows that may receive the %. When no filter is
+  # provided, every row is eligible.
+  if (has_filter) {
     dataset <- dataset |>
       dplyr::mutate(
-        .pct_rank = dplyr::row_number(.data$value)
+        .pct_eligible = dplyr::coalesce(!!percent_filter_flag, FALSE)
       )
   } else {
     dataset <- dataset |>
+      dplyr::mutate(.pct_eligible = TRUE)
+  }
+
+  if (isTRUE(inherent_order_label)) {
+    # Among eligible rows in each percent_var level, pick the smallest value,
+    # breaking ties by largest result.
+    dataset <- dataset |>
       dplyr::mutate(
-        .pct_rank = dplyr::row_number(dplyr::desc(.data$result))
+        .pct_target_val = suppressWarnings(min(
+          ifelse(.data$.pct_eligible, .data$value, NA_real_),
+          na.rm = TRUE
+        )),
+        .pct_target_result = suppressWarnings(max(
+          ifelse(
+            .data$.pct_eligible &
+              .data$value == .data$.pct_target_val,
+            .data$result,
+            NA_real_
+          ),
+          na.rm = TRUE
+        )),
+        .pct_is_top = dplyr::coalesce(
+          .data$.pct_eligible &
+            .data$value == .data$.pct_target_val &
+            .data$result == .data$.pct_target_result,
+          FALSE
+        ),
+        .pct_rank = cumsum(.data$.pct_is_top)
+      )
+  } else {
+    # Among eligible rows in each percent_var level, pick the largest result.
+    dataset <- dataset |>
+      dplyr::mutate(
+        .pct_target_result = suppressWarnings(max(
+          ifelse(.data$.pct_eligible, .data$result, NA_real_),
+          na.rm = TRUE
+        )),
+        .pct_is_top = dplyr::coalesce(
+          .data$.pct_eligible &
+            .data$result == .data$.pct_target_result,
+          FALSE
+        ),
+        .pct_rank = cumsum(.data$.pct_is_top)
       )
   }
 
   dataset <- dataset |>
     dplyr::mutate(
       percent_label = ifelse(
-        .data$.pct_rank == 1,
+        .data$.pct_is_top & .data$.pct_rank == 1,
         stringr::str_c(.data$result * 100, '%'),
         stringr::str_c(.data$result * 100)
       )
     ) |>
-    dplyr::select(-".pct_rank") |>
+    dplyr::select(-tidyselect::starts_with(".pct_")) |>
     dplyr::ungroup()
 
   if (length(existing_groups) > 0) {

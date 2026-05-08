@@ -2325,7 +2325,7 @@ test_that("percent_filter restricts which rows are eligible for %", {
   # Add a gender layer; female rows always have larger results, but we
   # want the % on the male top per country.
   frequencies <- tibble::tibble(
-    group_var  = c(rep(1L, 6), rep(2L, 6)),
+    group_var = c(rep(1L, 6), rep(2L, 6)),
     group_var2 = rep(c('USA', 'USA', 'USA', 'Italy', 'Italy', 'Italy'), 2),
     label = rep(c('Brand A', 'Brand B', 'Brand C'), 4),
     value = rep(c(1, 2, 3), 4),

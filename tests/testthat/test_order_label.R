@@ -2211,7 +2211,6 @@ test_that('horizontal = TRUE is deprecated', {
   )
 })
 
-
 # percent_var / percent_filter --------------------------------------------
 
 # Shared fixture: two countries x three brands. Italy's max result is on
@@ -2268,14 +2267,33 @@ test_that("percent_var with inherent_order_label picks the label where value = 1
 })
 
 
-test_that("percent_all = TRUE wins over percent_var", {
+test_that('percent_var = "All" puts a % on every row', {
   frequencies <- make_pv_fixture() |>
     order_label(
       group_var = group_var,
-      percent_var = group_var,
-      percent_all = TRUE
+      percent_var = "All"
     )
 
+  expect_true(all(stringr::str_detect(frequencies$percent_label, '%')))
+})
+
+
+test_that("percent_all = TRUE is deprecated and maps to percent_var = 'All'", {
+  expect_snapshot({
+    frequencies <- make_pv_fixture() |>
+      order_label(
+        group_var = group_var,
+        percent_all = TRUE
+      )
+  })
+  # Despite the deprecation warning, behavior should match percent_var = "All".
+  frequencies <- suppressWarnings(
+    make_pv_fixture() |>
+      order_label(
+        group_var = group_var,
+        percent_all = TRUE
+      )
+  )
   expect_true(all(stringr::str_detect(frequencies$percent_label, '%')))
 })
 

@@ -2358,11 +2358,31 @@ test_that("percent_filter restricts which rows are eligible for %", {
 test_that("percent_filter with no eligible rows in a level skips that level", {
   # Italy has no rows where group_var == 1. USA does.
   frequencies <- tibble::tibble(
-    group_var  = c(2L, 2L, 2L, 1L, 1L, 1L, 2L, 2L, 2L),
-    group_var2 = c('Italy', 'Italy', 'Italy', 'USA', 'USA', 'USA', 'USA', 'USA', 'USA'),
-    label      = c('Brand A', 'Brand B', 'Brand C', 'Brand A', 'Brand B', 'Brand C', 'Brand A', 'Brand B', 'Brand C'),
-    value      = c(1, 2, 3, 1, 2, 3, 1, 2, 3),
-    result     = c(.40, .35, .25, .30, .20, .10, .50, .25, .25)
+    group_var = c(2L, 2L, 2L, 1L, 1L, 1L, 2L, 2L, 2L),
+    group_var2 = c(
+      'Italy',
+      'Italy',
+      'Italy',
+      'USA',
+      'USA',
+      'USA',
+      'USA',
+      'USA',
+      'USA'
+    ),
+    label = c(
+      'Brand A',
+      'Brand B',
+      'Brand C',
+      'Brand A',
+      'Brand B',
+      'Brand C',
+      'Brand A',
+      'Brand B',
+      'Brand C'
+    ),
+    value = c(1, 2, 3, 1, 2, 3, 1, 2, 3),
+    result = c(.40, .35, .25, .30, .20, .10, .50, .25, .25)
   ) |>
     order_label(
       group_var = group_var,

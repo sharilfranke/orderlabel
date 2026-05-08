@@ -388,7 +388,6 @@ test_that("Ungrouped, percent_all", {
   expect_snapshot(
     frequencies |> order_label(percent_all = TRUE)
   )
-
 })
 
 

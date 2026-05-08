@@ -2328,10 +2328,9 @@ test_that("percent_filter restricts which rows are eligible for %", {
   frequencies <- tibble::tibble(
     group_var  = c(rep(1L, 6), rep(2L, 6)),
     group_var2 = rep(c('USA', 'USA', 'USA', 'Italy', 'Italy', 'Italy'), 2),
-    label      = rep(c('Brand A', 'Brand B', 'Brand C'), 4),
-    value      = rep(c(1, 2, 3), 4),
-    result     = c(.30, .20, .10, .25, .35, .15,
-                   .50, .40, .20, .55, .45, .30)
+    label = rep(c('Brand A', 'Brand B', 'Brand C'), 4),
+    value = rep(c(1, 2, 3), 4),
+    result = c(.30, .20, .10, .25, .35, .15, .50, .40, .20, .55, .45, .30)
   ) |>
     order_label(
       group_var = group_var,

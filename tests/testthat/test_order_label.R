@@ -383,7 +383,7 @@ test_that("Ungrouped, percent_all", {
     n = c(10, 15, 15, 20, 40),
     stat = rep('percent', 5),
     result = c(.1, .3, .4, .31, .9)
-  ) 
+  )
 
   expect_snapshot(
     frequencies |> order_label(percent_all = TRUE)

@@ -103,10 +103,10 @@ order_label <- function(
       what = "order_label(percent_all)",
       with = 'order_label(percent_var = "All")'
     )
-    percent_all <- isTRUE(percent_all)
-  } else {
-    percent_all <- FALSE
-  }
+    if(percent_all == TRUE ){
+      percent_var <- "All"
+    }
+  } 
 
   ### Test matching arguments
   num_fmt <- rlang::arg_match(num_fmt)

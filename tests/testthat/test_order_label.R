@@ -2217,9 +2217,9 @@ test_that('horizontal = TRUE is deprecated', {
 make_pv_fixture <- function() {
   tibble::tibble(
     group_var = c(rep('Italy', 3), rep('USA', 3)),
-    value     = rep(c(1, 2, 3), 2),
-    label     = rep(c('Brand A', 'Brand B', 'Brand C'), 2),
-    result    = c(.40, .50, .10,   .35, .25, .40)
+    value = rep(c(1, 2, 3), 2),
+    label = rep(c('Brand A', 'Brand B', 'Brand C'), 2),
+    result = c(.40, .50, .10, .35, .25, .40)
   )
 }
 

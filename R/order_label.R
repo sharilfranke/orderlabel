@@ -103,7 +103,7 @@ order_label <- function(
       what = "order_label(percent_all)",
       with = 'order_label(percent_var = "All")'
     )
-    if(percent_all == TRUE ){
+    if (percent_all == TRUE) {
       percent_var <- "All"
     }
   } 

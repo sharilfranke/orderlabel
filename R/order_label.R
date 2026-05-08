@@ -5,7 +5,7 @@
 #' @param dataset The name of the data frame for the function to modify, usually piped in after running freqs
 #' @param label_var DEFAULT = label; name of variable to be ordered
 #' @param group_var DEFAULT = 'NULL'; Add the unquoted name of the grouping variable if your data is grouped
-#' @param percent_var DEFAULT = NULL; Unquoted name of a variable in the dataset (e.g., `group_var` or `country`) that controls where the \% symbol appears. Be sure to specify "group_var = group_var" when using this argument. By default, the \% is placed on the highest result of each percent_var value. When inherent_order_label is set to TRUE, the \% sign is assigned to each unique group_var where value = 1. Useful for grouped charts where you want one \% per group rather than just one \% overall. Ignored when `percent_all = TRUE` or when `num_fmt = "general"`.
+#' @param percent_var DEFAULT = NULL; Unquoted name of a variable in the dataset (e.g., `group_var` or `country`) that controls where the \% symbol appears. Be sure to specify "group_var = group_var" when using this argument. By default, the \% is placed on the highest result of each percent_var value. When inherent_order_label is set to TRUE, the \% sign is assigned to each unique group_var where value = 1. Useful for grouped charts where you want one \% per group rather than just one \% overall. Pass `percent_var = "All"` (the string) to put a \% next to every row \(replaces the deprecated `percent_all` argument\). Ignored when `num_fmt = "general"`.
 #' @param percent_filter DEFAULT = NULL; Optional unquoted dplyr-style expression (e.g., `group_var == 1`) restricting which rows are eligible to receive the \%. For example, if your data was grouped by country and gender, with the percent_var equal to country, but you only wanted the \% sign to go with men, then you could set percent_filter to "Male". If there is no eligible row for that percent_var, then it will be skipped. The "top" row within each `percent_var` level is selected only from rows where this evaluates to TRUE. Levels with no eligible rows get no \%. Has no effect unless `percent_var` is also set.
 #' @param inherent_order_label DEFAULT = FALSE; If FALSE, puts labels in descending order. If TRUE, puts labels in the inherent order from survey (e.g., Strongly agree to strongly disagree). Specifying stacked = 'gg' or 'ms' automatically makes inherent_order_label = TRUE
 #' @param inherent_order_group DEFAULT = FALSE; If FALSE, puts groups in descending order. If TRUE, puts groups in the order they are factored (e.g., District 1, District 2...)
@@ -21,7 +21,7 @@
 #' @param topbox DEFAULT = NULL; Can be set to a numeric value, ex: topbox = 2 to order by top2box instead of topbox
 #' @param none_other DEFAULT = TRUE; Automatically puts "Other", "None of the above", and "Prefer not to say" options at the bottom. Change to FALSE to let them stay ordered elsewhere in the chart
 #' @param num_fmt DEFAULT = "percent"; Other option is "general", use this when working with whole numbers rather than percents/proportions
-#' @param percent_all DEFAULT = FALSE; When FALSE, will put a \% next to only the first number label on the chart. If set to TRUE, will put \%s next to all numbers labels
+#' @param percent_all (Deprecated) Use `percent_var = "All"` instead.
 #' @keywords order label arrange
 #' @importFrom rlang .data
 #' @examples
@@ -75,7 +75,7 @@ order_label <- function(
   topbox = NULL,
   none_other = TRUE,
   num_fmt = c("percent", "general"),
-  percent_all = FALSE
+  percent_all = lifecycle::deprecated()
 ) {
   # Soft-deprecate `horizontal` if user supplied it, mapping to `direction`.
   if (lifecycle::is_present(horizontal)) {
@@ -95,6 +95,19 @@ order_label <- function(
     }
   }
 
+  # Soft-deprecate `percent_all` if user supplied it, mapping to
+  # `percent_var = "All"`.
+  if (lifecycle::is_present(percent_all)) {
+    lifecycle::deprecate_warn(
+      when = "0.4.3",
+      what = "order_label(percent_all)",
+      with = 'order_label(percent_var = "All")'
+    )
+    percent_all <- isTRUE(percent_all)
+  } else {
+    percent_all <- FALSE
+  }
+
   ### Test matching arguments
   num_fmt <- rlang::arg_match(num_fmt)
   stacked <- rlang::arg_match(stacked)
@@ -108,6 +121,18 @@ order_label <- function(
   group_var_char <- rlang::as_name(group_var_flag)
   percent_var_flag <- dplyr::enquo(percent_var)
   percent_filter_flag <- dplyr::enquo(percent_filter)
+  # `percent_var = "All"` is a magic string meaning "% on every row" — same
+  # behavior as the deprecated `percent_all = TRUE`. Decode it here so the
+  # rest of the function only has to deal with the boolean.
+  percent_var_expr <- rlang::quo_get_expr(percent_var_flag)
+  if (
+    is.character(percent_var_expr) &&
+      length(percent_var_expr) == 1 &&
+      percent_var_expr == "All"
+  ) {
+    percent_all <- TRUE
+    percent_var_flag <- rlang::quo(NULL)
+  }
   # Stacked flags: bars always inherently ordered
   inherent_order_label <- ifelse(
     stacked != 'NULL',

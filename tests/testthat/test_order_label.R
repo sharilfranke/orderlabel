@@ -2210,3 +2210,154 @@ test_that('horizontal = TRUE is deprecated', {
     )
   )
 })
+
+
+# percent_var / percent_filter --------------------------------------------
+
+# Shared fixture: two countries x three brands. Italy's max result is on
+# Brand B (.50, value=2). USA's max result is on Brand C (.40, value=3).
+# Italy's value=1 max is Brand A (.40); USA's value=1 max is Brand A (.35).
+make_pv_fixture <- function() {
+  tibble::tibble(
+    group_var = c(rep('Italy', 3), rep('USA', 3)),
+    value     = rep(c(1, 2, 3), 2),
+    label     = rep(c('Brand A', 'Brand B', 'Brand C'), 2),
+    result    = c(.40, .50, .10,   .35, .25, .40)
+  )
+}
+
+test_that("percent_var puts % on max-result row per group", {
+  frequencies <- make_pv_fixture() |>
+    order_label(
+      group_var = group_var,
+      percent_var = group_var
+    )
+
+  pct_rows <- frequencies |>
+    dplyr::filter(stringr::str_detect(.data$percent_label, '%'))
+
+  expect_equal(nrow(pct_rows), 2)
+  expect_setequal(as.character(pct_rows$group_var), c('Italy', 'USA'))
+  expect_equal(
+    as.character(pct_rows$label[pct_rows$group_var == 'Italy']),
+    'Brand B'
+  )
+  expect_equal(
+    as.character(pct_rows$label[pct_rows$group_var == 'USA']),
+    'Brand C'
+  )
+})
+
+
+test_that("percent_var with inherent_order_label picks the label where value = 1, ties broken by max result", {
+  frequencies <- make_pv_fixture() |>
+    order_label(
+      group_var = group_var,
+      percent_var = group_var,
+      inherent_order_label = TRUE
+    )
+
+  pct_rows <- frequencies |>
+    dplyr::filter(stringr::str_detect(.data$percent_label, '%'))
+
+  # Both countries' value=1 row (Brand A) gets the %, since each country has
+  # exactly one row at value=1 here.
+  expect_equal(nrow(pct_rows), 2)
+  expect_true(all(pct_rows$value == 1))
+  expect_true(all(as.character(pct_rows$label) == 'Brand A'))
+})
+
+
+test_that("percent_all = TRUE wins over percent_var", {
+  frequencies <- make_pv_fixture() |>
+    order_label(
+      group_var = group_var,
+      percent_var = group_var,
+      percent_all = TRUE
+    )
+
+  expect_true(all(stringr::str_detect(frequencies$percent_label, '%')))
+})
+
+
+test_that("percent_var has no effect when num_fmt = 'general'", {
+  frequencies <- make_pv_fixture() |>
+    dplyr::mutate(result = result * 100) |>
+    order_label(
+      group_var = group_var,
+      percent_var = group_var,
+      num_fmt = 'general'
+    )
+
+  expect_false(any(stringr::str_detect(frequencies$percent_label, '%')))
+})
+
+
+test_that("default behavior is unchanged when percent_var is NULL", {
+  frequencies <- make_pv_fixture() |>
+    order_label(group_var = group_var)
+
+  pct_rows <- frequencies |>
+    dplyr::filter(stringr::str_detect(.data$percent_label, '%'))
+
+  # Existing behavior: only the very first row gets a %
+  expect_equal(nrow(pct_rows), 1)
+})
+
+
+test_that("percent_filter restricts which rows are eligible for %", {
+  # Add a gender layer; female rows always have larger results, but we
+  # want the % on the male top per country.
+  frequencies <- tibble::tibble(
+    group_var  = c(rep(1L, 6), rep(2L, 6)),
+    group_var2 = rep(c('USA', 'USA', 'USA', 'Italy', 'Italy', 'Italy'), 2),
+    label      = rep(c('Brand A', 'Brand B', 'Brand C'), 4),
+    value      = rep(c(1, 2, 3), 4),
+    result     = c(.30, .20, .10, .25, .35, .15,
+                   .50, .40, .20, .55, .45, .30)
+  ) |>
+    order_label(
+      group_var = group_var,
+      percent_var = group_var2,
+      percent_filter = group_var == 1
+    )
+
+  pct_rows <- frequencies |>
+    dplyr::filter(stringr::str_detect(.data$percent_label, '%'))
+
+  expect_equal(nrow(pct_rows), 2)
+  expect_true(all(as.character(pct_rows$group_var) == '1'))
+  expect_equal(
+    as.character(pct_rows$label[pct_rows$group_var2 == 'USA']),
+    'Brand A'
+  )
+  expect_equal(
+    as.character(pct_rows$label[pct_rows$group_var2 == 'Italy']),
+    'Brand B'
+  )
+})
+
+
+test_that("percent_filter with no eligible rows in a level skips that level", {
+  # Italy has no rows where group_var == 1. USA does.
+  frequencies <- tibble::tibble(
+    group_var  = c(2L, 2L, 2L, 1L, 1L, 1L, 2L, 2L, 2L),
+    group_var2 = c('Italy', 'Italy', 'Italy', 'USA', 'USA', 'USA', 'USA', 'USA', 'USA'),
+    label      = c('Brand A', 'Brand B', 'Brand C', 'Brand A', 'Brand B', 'Brand C', 'Brand A', 'Brand B', 'Brand C'),
+    value      = c(1, 2, 3, 1, 2, 3, 1, 2, 3),
+    result     = c(.40, .35, .25, .30, .20, .10, .50, .25, .25)
+  ) |>
+    order_label(
+      group_var = group_var,
+      percent_var = group_var2,
+      percent_filter = group_var == 1
+    )
+
+  pct_rows <- frequencies |>
+    dplyr::filter(stringr::str_detect(.data$percent_label, '%'))
+
+  # Only USA gets a % (on its single male top: Brand A, .30)
+  expect_equal(nrow(pct_rows), 1)
+  expect_equal(as.character(pct_rows$group_var2), 'USA')
+  expect_equal(as.character(pct_rows$label), 'Brand A')
+})

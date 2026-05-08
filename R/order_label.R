@@ -5,6 +5,7 @@
 #' @param dataset The name of the data frame for the function to modify, usually piped in after running freqs
 #' @param label_var DEFAULT = label; name of variable to be ordered
 #' @param group_var DEFAULT = 'NULL'; Add the unquoted name of the grouping variable if your data is grouped
+#' @param percent_var DEFAULT = NULL; Unquoted name of a variable in the dataset (e.g., `group_var` or `country`) that controls where the \% symbol appears. When set, the \% is placed on the first row within each level of `percent_var` in the function's final factor ordering (i.e., it honors `inherent_order_label`, `topbox`, etc.). Useful for grouped charts where you want one \% per group rather than just one \% overall. Ignored when `percent_all = TRUE` or when `num_fmt = "general"`.
 #' @param inherent_order_label DEFAULT = FALSE; If FALSE, puts labels in descending order. If TRUE, puts labels in the inherent order from survey (e.g., Strongly agree to strongly disagree). Specifying stacked = 'gg' or 'ms' automatically makes inherent_order_label = TRUE
 #' @param inherent_order_group DEFAULT = FALSE; If FALSE, puts groups in descending order. If TRUE, puts groups in the order they are factored (e.g., District 1, District 2...)
 #' @param label_first DEFAULT = NA; If specified, puts the specified label first. ex: 'brand1' would put label called brand1 before all other labels
@@ -57,6 +58,7 @@ order_label <- function(
   dataset, # will likely be frequencies
   label_var = label,
   group_var = 'NULL',
+  percent_var = NULL,
   inherent_order_label = FALSE,
   inherent_order_group = FALSE,
   label_first = NA,
@@ -102,6 +104,7 @@ order_label <- function(
   label_var_flag <- dplyr::enquo(label_var)
   group_var_flag <- dplyr::enquo(group_var)
   group_var_char <- rlang::as_name(group_var_flag)
+  percent_var_flag <- dplyr::enquo(percent_var)
   # Stacked flags: bars always inherently ordered
   inherent_order_label <- ifelse(
     stacked != 'NULL',
@@ -251,6 +254,14 @@ order_label <- function(
   dataset <- num_fmt_orderlabel(dataset, num_fmt, percent_all)
   ### arrange_by_factor
   dataset <- arrange_by_factor(dataset, grouped)
+  ### percent_var override (after final arrange so row 1 per group is the visual top)
+  dataset <- percent_var_fun(
+    dataset,
+    percent_var_flag,
+    percent_all,
+    num_fmt,
+    inherent_order_label
+  )
   return(dataset)
 }
 
@@ -2036,6 +2047,63 @@ num_fmt_orderlabel <- function(
     dataset <- dataset |>
       dplyr::mutate(percent_label = as.character(.data$result))
   }
+}
+
+
+#### percent_var ####
+# Override percent_label so % appears on the "top" row within each level of
+# percent_var, where "top" honors the same ordering criterion as the rest of
+# the function: largest `result` by default, or smallest `value` when
+# inherent_order_label = TRUE. No-op when percent_var isn't set, when
+# percent_all = TRUE (full % override wins), or when num_fmt = "general".
+percent_var_fun <- function(
+  dataset,
+  percent_var_flag,
+  percent_all,
+  num_fmt,
+  inherent_order_label
+) {
+  if (
+    rlang::quo_is_null(percent_var_flag) ||
+      isTRUE(percent_all) ||
+      num_fmt != "percent"
+  ) {
+    return(dataset)
+  }
+
+  existing_groups <- dplyr::groups(dataset)
+
+  dataset <- dataset |>
+    dplyr::ungroup() |>
+    dplyr::group_by(!!percent_var_flag)
+
+  if (isTRUE(inherent_order_label)) {
+    dataset <- dataset |>
+      dplyr::mutate(
+        .pct_rank = dplyr::row_number(.data$value)
+      )
+  } else {
+    dataset <- dataset |>
+      dplyr::mutate(
+        .pct_rank = dplyr::row_number(dplyr::desc(.data$result))
+      )
+  }
+
+  dataset <- dataset |>
+    dplyr::mutate(
+      percent_label = ifelse(
+        .data$.pct_rank == 1,
+        stringr::str_c(.data$result * 100, '%'),
+        stringr::str_c(.data$result * 100)
+      )
+    ) |>
+    dplyr::select(-".pct_rank") |>
+    dplyr::ungroup()
+
+  if (length(existing_groups) > 0) {
+    dataset <- dataset |> dplyr::group_by(!!!existing_groups)
+  }
+  dataset
 }
 
 

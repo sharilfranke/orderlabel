@@ -383,13 +383,12 @@ test_that("Ungrouped, percent_all", {
     n = c(10, 15, 15, 20, 40),
     stat = rep('percent', 5),
     result = c(.1, .3, .4, .31, .9)
-  ) |>
-    order_label(percent_all = TRUE)
+  ) 
 
-  expect_equal(
-    frequencies |> dplyr::pull(percent_label),
-    c('90%', '40%', '31%', '30%', '10%')
+  expect_snapshot(
+    frequencies |> order_label(percent_all = TRUE)
   )
+
 })
 
 

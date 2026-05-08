@@ -18,6 +18,24 @@
     Output
       [1] "One"   "Two"   "Three" "Four"  "Five" 
 
+# Ungrouped, percent_all
+
+    Code
+      order_label(frequencies, percent_all = TRUE)
+    Condition
+      Warning:
+      The `percent_all` argument of `order_label()` is deprecated as of orderlabel 0.4.3.
+      i Please use the `percent_var` argument instead.
+    Output
+      # A tibble: 5 x 7
+        variable value label     n stat    result percent_label
+        <chr>    <dbl> <fct> <dbl> <chr>    <dbl> <chr>        
+      1 s_test       5 Five     40 percent   0.9  90%          
+      2 s_test       3 Three    15 percent   0.4  40%          
+      3 s_test       4 Four     20 percent   0.31 31%          
+      4 s_test       2 Two      15 percent   0.3  30%          
+      5 s_test       1 One      10 percent   0.1  10%          
+
 # horizontal = TRUE is deprecated
 
     Code
@@ -39,4 +57,14 @@
       7 Group 3   s_test       1 One      10 percent   0.5  50%          
       8 Group 1   s_test       1 One      10 percent   0.1  10           
       9 Group 2   s_test       1 One      10 percent   0.01 1            
+
+# percent_all = TRUE is deprecated and maps to percent_var = 'All'
+
+    Code
+      frequencies <- order_label(make_pv_fixture(), group_var = group_var,
+      percent_all = TRUE)
+    Condition
+      Warning:
+      The `percent_all` argument of `order_label()` is deprecated as of orderlabel 0.4.3.
+      i Please use the `percent_var` argument instead.
 

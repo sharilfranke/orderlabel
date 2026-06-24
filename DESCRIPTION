@@ -12,8 +12,10 @@ License: GPL-3
 URL: https://github.com/nick-moffitt/orderlabel, https://y2analytics.github.io/orderlabel/
 BugReports: https://github.com/nick-moffitt/orderlabel/issues
 Imports:
+    cli,
     dplyr,
     forcats,
+    haven,
     lubridate,
     magrittr,
     readxl,
@@ -23,6 +25,7 @@ Imports:
     tidyselect,
     tidyr,
     lifecycle,
+    utils,
     withr
 Suggests:
     labelled,

@@ -2,6 +2,7 @@
 
 export("%>%")
 export(add_ages)
+export(add_partyrollup)
 export(add_regions)
 export(order_label)
 export(order_same)

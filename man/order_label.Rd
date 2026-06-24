@@ -8,6 +8,8 @@ order_label(
   dataset,
   label_var = label,
   group_var = "NULL",
+  percent_var = NULL,
+  percent_filter = NULL,
   inherent_order_label = FALSE,
   inherent_order_group = FALSE,
   label_first = NA,
@@ -22,7 +24,7 @@ order_label(
   topbox = NULL,
   none_other = TRUE,
   num_fmt = c("percent", "general"),
-  percent_all = FALSE
+  percent_all = lifecycle::deprecated()
 )
 }
 \arguments{
@@ -31,6 +33,10 @@ order_label(
 \item{label_var}{DEFAULT = label; name of variable to be ordered}
 
 \item{group_var}{DEFAULT = 'NULL'; Add the unquoted name of the grouping variable if your data is grouped}
+
+\item{percent_var}{DEFAULT = NULL; Unquoted name of a variable in the dataset (e.g., `group_var` or `country`) that controls where the \% symbol appears. Be sure to specify "group_var = group_var" when using this argument. By default, the \% is placed on the highest result of each percent_var value. When inherent_order_label is set to TRUE, the \% sign is assigned to each unique group_var where value = 1. Useful for grouped charts where you want one \% per group rather than just one \% overall. Pass `percent_var = "All"` (the string) to put a \% next to every row \(replaces the deprecated `percent_all` argument\). Ignored when `num_fmt = "general"`.}
+
+\item{percent_filter}{DEFAULT = NULL; Optional unquoted dplyr-style expression (e.g., `group_var == 1`) restricting which rows are eligible to receive the \%. For example, if your data was grouped by country and gender, with the percent_var equal to country, but you only wanted the \% sign to go with men, then you could set percent_filter to "Male". If there is no eligible row for that percent_var, then it will be skipped. The "top" row within each `percent_var` level is selected only from rows where this evaluates to TRUE. Levels with no eligible rows get no \%. Has no effect unless `percent_var` is also set.}
 
 \item{inherent_order_label}{DEFAULT = FALSE; If FALSE, puts labels in descending order. If TRUE, puts labels in the inherent order from survey (e.g., Strongly agree to strongly disagree). Specifying stacked = 'gg' or 'ms' automatically makes inherent_order_label = TRUE}
 
@@ -60,7 +66,7 @@ order_label(
 
 \item{num_fmt}{DEFAULT = "percent"; Other option is "general", use this when working with whole numbers rather than percents/proportions}
 
-\item{percent_all}{DEFAULT = FALSE; When FALSE, will put a \% next to only the first number label on the chart. If set to TRUE, will put \%s next to all numbers labels}
+\item{percent_all}{(Deprecated) Use `percent_var = "All"` instead.}
 }
 \description{
 Takes a dataframe (frequencies) and orders the labels and groups while adding percent labels for use in ggplot

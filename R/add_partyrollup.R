@@ -214,7 +214,12 @@ resolve_party_var <- function(
   col_names <- names(df)
 
   if (rlang::quo_is_null(var_quo)) {
-    matches <- col_match(target, col_names, keywords = keywords, exclude = exclude)
+    matches <- col_match(
+      target,
+      col_names,
+      keywords = keywords,
+      exclude = exclude
+    )
 
     if (length(matches) == 0L) {
       cli::cli_abort(c(

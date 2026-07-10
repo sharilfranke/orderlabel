@@ -52,7 +52,8 @@ The new variable is a [haven::labelled()] numeric vector:
 
 The function errors if any respondent's `party_id` and `party_lean` point to
 different parties (e.g. a Republican who leans Democratic), since such a row
-cannot be classified unambiguously.
+cannot be classified unambiguously. On success it reports which column it used
+for each of the three arguments, which is helpful when they are auto-detected.
 }
 \examples{
 responses <- tibble::tibble(

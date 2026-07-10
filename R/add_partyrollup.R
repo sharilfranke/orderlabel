@@ -20,7 +20,8 @@
 #'
 #' The function errors if any respondent's `party_id` and `party_lean` point to
 #' different parties (e.g. a Republican who leans Democratic), since such a row
-#' cannot be classified unambiguously.
+#' cannot be classified unambiguously. On success it reports which column it used
+#' for each of the three arguments, which is helpful when they are auto-detected.
 #'
 #' @param df The data frame for the function to modify, usually piped in.
 #' @param party_id DEFAULT = NULL; the party identification variable, as a bare
@@ -131,6 +132,13 @@ add_partyrollup <- function(
       "Strong Democrat" = 7
     )
   )
+
+  cli::cli_inform(c(
+    "v" = "{.fn add_partyrollup} used these variables:",
+    "*" = "{.arg party_id}: {.val {party_id_col}}",
+    "*" = "{.arg party_lean}: {.val {party_lean_col}}",
+    "*" = "{.arg party_strength}: {.val {party_strength_col}}"
+  ))
 
   new_name_str <- rlang::as_name(rlang::enquo(new_name))
   df |>

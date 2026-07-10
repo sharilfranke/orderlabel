@@ -49,6 +49,10 @@ The new variable is a [haven::labelled()] numeric vector:
 5. Lean Democrat
 6. Not so strong Democrat
 7. Strong Democrat
+
+The function errors if any respondent's `party_id` and `party_lean` point to
+different parties (e.g. a Republican who leans Democratic), since such a row
+cannot be classified unambiguously.
 }
 \examples{
 responses <- tibble::tibble(

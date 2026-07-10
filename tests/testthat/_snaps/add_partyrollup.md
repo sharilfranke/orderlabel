@@ -47,6 +47,16 @@
                Strong Democrat 
                              7 
 
+# add_partyrollup errors when party id and lean name different parties
+
+    Code
+      add_partyrollup(df)
+    Condition
+      Error in `add_partyrollup()`:
+      ! Contradictory party classifications detected.
+      x Rows 1 and 3: `party_id` and `party_lean` point to different parties.
+      i Fix these rows in the source data or supply cleaned variables.
+
 # add_partyrollup errors when a variable cannot be found
 
     Code

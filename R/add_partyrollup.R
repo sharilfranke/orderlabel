@@ -18,6 +18,10 @@
 #' 6. Not so strong Democrat
 #' 7. Strong Democrat
 #'
+#' The function errors if any respondent's `party_id` and `party_lean` point to
+#' different parties (e.g. a Republican who leans Democratic), since such a row
+#' cannot be classified unambiguously.
+#'
 #' @param df The data frame for the function to modify, usually piped in.
 #' @param party_id DEFAULT = NULL; the party identification variable, as a bare
 #'   column name. When `NULL`, the function searches `df` for a likely match by
@@ -92,6 +96,17 @@ add_partyrollup <- function(
   is_strong <- detect_ci(strength_text, "strong") & !is_not_strong
   leans_rep <- detect_ci(lean_text, "republican")
   leans_dem <- detect_ci(lean_text, "democrat")
+
+  # A partisan should never lean toward the opposite party; such rows cannot be
+  # classified unambiguously. which() drops the NA comparisons for us.
+  conflict_rows <- which((is_rep & leans_dem) | (is_dem & leans_rep))
+  if (length(conflict_rows) > 0L) {
+    cli::cli_abort(c(
+      "Contradictory party classifications detected.",
+      "x" = "{cli::qty(length(conflict_rows))}Row{?s} {conflict_rows}: {.arg party_id} and {.arg party_lean} point to different parties.",
+      "i" = "Fix these rows in the source data or supply cleaned variables."
+    ))
+  }
 
   rollup <- dplyr::case_when(
     is_rep & is_strong ~ 1,

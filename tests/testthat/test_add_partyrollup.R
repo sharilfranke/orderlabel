@@ -124,18 +124,6 @@ test_that("add_partyrollup recognizes 'Not very strong' phrasing", {
 })
 
 
-test_that("add_partyrollup classifies partisans by strength, ignoring lean", {
-  df <- tibble::tibble(
-    party_id = c("Republican", "Democrat"),
-    party_strength = c("Strong", "Strong"),
-    party_lean = c("Lean Democrat", "Lean Republican")
-  )
-
-  out <- add_partyrollup(df)
-  expect_equal(as.integer(out$partyid_7), c(1L, 7L))
-})
-
-
 test_that("add_partyrollup returns NA when the party id is missing", {
   df <- tibble::tibble(
     party_id = c(NA, "Independent"),
@@ -145,6 +133,29 @@ test_that("add_partyrollup returns NA when the party id is missing", {
 
   out <- add_partyrollup(df)
   expect_equal(as.integer(out$partyid_7), c(NA_integer_, NA_integer_))
+})
+
+
+test_that("add_partyrollup allows a partisan leaning toward their own party", {
+  df <- tibble::tibble(
+    party_id = c("Republican", "Democrat"),
+    party_strength = c("Strong", "Not so strong"),
+    party_lean = c("Lean Republican", "Lean Democrat")
+  )
+
+  out <- add_partyrollup(df)
+  expect_equal(as.integer(out$partyid_7), c(1L, 6L))
+})
+
+
+test_that("add_partyrollup errors when party id and lean name different parties", {
+  df <- tibble::tibble(
+    party_id = c("Republican", "Democrat", "Democrat"),
+    party_strength = c("Strong", "Strong", "Not so strong"),
+    party_lean = c("Lean Democrat", NA, "Lean Republican")
+  )
+
+  expect_snapshot(error = TRUE, add_partyrollup(df))
 })
 
 

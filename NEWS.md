@@ -1,6 +1,6 @@
 # orderlabel 0.4.3
 ## New features
-* `add_partyrollup()` combines party identification, strength, and leaning variables into a single 7-level `haven_labelled` party variable, auto-detecting the input variables by name when they are not supplied.
+* `add_partyrollup()` combines party identification, strength, and leaning variables into a single 7-level `haven_labelled` party variable, auto-detecting the input variables by name when they are not supplied and erroring on rows where party identification and leaning point to different parties.
 ## Changes
 * The `horizontal` argument of `order_label()` is now deprecated, being replaced by `direction`.
 
